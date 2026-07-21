@@ -86,7 +86,7 @@ pipeline {
                         test -L .env
 
                         echo "🔎 Validando JSON..."
-                        jq empty openclaw.json
+                        python3 -m json.tool openclaw.json >/dev/null
 
                         echo "🔎 Validando Docker Compose..."
                         docker compose config --quiet
