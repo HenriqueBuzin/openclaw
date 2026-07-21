@@ -17,20 +17,20 @@
         "apiKey": "ollama-local",
         "baseUrl": "http://ollama:11434",
         "timeoutSeconds": 600,
-        "contextWindow": 16384,
+        "contextWindow": 32768,
         "maxTokens": 4096,
         "models": [
           {
-            "id": "qwen3:8b",
-            "name": "Qwen3 8B",
+            "id": "qwen3:4b",
+            "name": "Qwen3 4B",
             "reasoning": true,
             "input": [
               "text"
             ],
-            "contextWindow": 16384,
+            "contextWindow": 32768,
             "maxTokens": 4096,
             "params": {
-              "num_ctx": 16384,
+              "num_ctx": 32768,
               "keep_alive": "10m"
             }
           }
@@ -41,7 +41,12 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "ollama/qwen3:8b"
+        "primary": "ollama/qwen3:4b"
+      },
+      "compaction": {
+        "mode": "safeguard",
+        "reserveTokensFloor": 20000,
+        "keepRecentTokens": 4096
       }
     }
   }
