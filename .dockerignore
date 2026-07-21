@@ -3,10 +3,6 @@
 .env
 .env.*
 !.env.example
-
-Jenkinsfile
 README.md
-
-backups/
-logs/
+LICENSE
 *.log

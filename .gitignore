@@ -1,11 +1,3 @@
 .env
-.env.*
-!.env.example
-
 *.log
-logs/
-backups/
-
 .DS_Store
-.idea/
-.vscode/

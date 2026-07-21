@@ -1,18 +1,17 @@
 # syntax=docker/dockerfile:1.7
 
 ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:latest
-
 FROM ${OPENCLAW_BASE_IMAGE}
 
 ARG BUILD_COMMIT=""
 ARG BUILD_DATE=""
 ARG BUILD_NUMBER=""
 
-LABEL org.opencontainers.image.title="OpenClaw com Ollama"
-LABEL org.opencontainers.image.description="OpenClaw usando Qwen local pelo Ollama"
-LABEL org.opencontainers.image.revision="${BUILD_COMMIT}"
-LABEL org.opencontainers.image.created="${BUILD_DATE}"
-LABEL dev.jenkins.build-number="${BUILD_NUMBER}"
+LABEL org.opencontainers.image.title="OpenClaw com Ollama" \
+      org.opencontainers.image.description="OpenClaw usando Qwen local pelo Ollama" \
+      org.opencontainers.image.revision="${BUILD_COMMIT}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      dev.jenkins.build-number="${BUILD_NUMBER}"
 
 USER root
 
@@ -28,15 +27,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         jq \
         openssh-client \
         procps \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p \
-      /home/node/.openclaw \
-      /home/node/.openclaw/workspace \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /home/node/.openclaw/workspace \
     && chown -R node:node /home/node/.openclaw
 
 USER node
-
 WORKDIR /app
 
 ENV HOME=/home/node \
@@ -51,6 +46,5 @@ ENV HOME=/home/node \
 
 EXPOSE 18789
 
-ENTRYPOINT ["node", "dist/index.js"]
-
-CMD ["gateway", "--bind", "lan", "--port", "18789"]
+# ENTRYPOINT e comportamento-base são herdados da imagem oficial.
+# O comando do gateway é definido no docker-compose.yml.

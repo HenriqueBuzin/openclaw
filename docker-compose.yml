@@ -5,36 +5,26 @@ services:
     image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
     container_name: openclaw-ollama
     restart: unless-stopped
-
     environment:
       TZ: America/Sao_Paulo
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-10m}
       OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-16384}
-
     volumes:
       - type: bind
         source: ${OLLAMA_DATA_ROOT:-/root/projects/volumes/ollama}
         target: /root/.ollama
-
     expose:
       - "11434"
-
     networks:
       - openclaw-internal
-
     healthcheck:
-      test:
-        - CMD
-        - ollama
-        - list
+      test: ["CMD", "ollama", "list"]
       interval: 20s
       timeout: 10s
       retries: 15
       start_period: 30s
-
     security_opt:
       - no-new-privileges:true
-
     logging:
       driver: json-file
       options:
@@ -43,60 +33,43 @@ services:
 
   ollama-model-init:
     image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
-    container_name: openclaw-model-init
     restart: "no"
-
     environment:
       OLLAMA_HOST: http://ollama:11434
-
-    command:
-      - pull
-      - ${OLLAMA_MODEL:-qwen3:8b}
-
+    command: ["pull", "${OLLAMA_MODEL:-qwen3:8b}"]
     depends_on:
       ollama:
         condition: service_healthy
-
     networks:
       - openclaw-internal
-
     security_opt:
       - no-new-privileges:true
 
   openclaw-config-init:
     image: alpine:3.22
-    container_name: openclaw-config-init
     restart: "no"
-
     user: "0:0"
-
     command:
       - /bin/sh
       - -ec
       - |
         mkdir -p /state/workspace
-
         cp /config/openclaw.json /state/openclaw.json
-
         chown -R 1000:1000 /state
         chmod 700 /state
+        chmod 700 /state/workspace
         chmod 600 /state/openclaw.json
-
         echo "Configuração do OpenClaw preparada."
-
     volumes:
       - type: bind
         source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw}
         target: /state
-
       - type: bind
         source: ./openclaw.json
         target: /config/openclaw.json
         read_only: true
-
     networks:
       - openclaw-internal
-
     security_opt:
       - no-new-privileges:true
 
@@ -109,59 +82,47 @@ services:
         BUILD_COMMIT: ${BUILD_COMMIT:-local}
         BUILD_DATE: ${BUILD_DATE:-unknown}
         BUILD_NUMBER: ${BUILD_NUMBER:-local}
-
     image: ${OPENCLAW_IMAGE_NAME:-openclaw-local}:${OPENCLAW_IMAGE_TAG:-latest}
     container_name: openclaw
     restart: unless-stopped
     init: true
-
+    command: ["gateway", "--bind", "lan", "--port", "18789"]
     env_file:
       - .env
-
     environment:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TZ: America/Sao_Paulo
       TERM: xterm-256color
-
       OPENCLAW_STATE_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:?Defina OPENCLAW_GATEWAY_TOKEN}
       OPENCLAW_DISABLE_BONJOUR: "1"
-
       OLLAMA_API_KEY: ollama-local
-
     volumes:
       - type: bind
         source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw}
         target: /home/node/.openclaw
-
     expose:
       - "18789"
-
     networks:
       - openclaw-internal
       - proxy-network
-
     depends_on:
       ollama:
         condition: service_healthy
-
       ollama-model-init:
         condition: service_completed_successfully
-
       openclaw-config-init:
         condition: service_completed_successfully
-
     healthcheck:
       test:
         - CMD
         - node
         - -e
-        - >
+        - >-
           fetch('http://127.0.0.1:18789/healthz')
           .then(response => process.exit(response.ok ? 0 : 1))
           .catch(() => process.exit(1))
@@ -169,14 +130,11 @@ services:
       timeout: 10s
       retries: 10
       start_period: 90s
-
     cap_drop:
       - NET_RAW
       - NET_ADMIN
-
     security_opt:
       - no-new-privileges:true
-
     logging:
       driver: json-file
       options:
@@ -185,50 +143,39 @@ services:
 
   openclaw-cli:
     image: ${OPENCLAW_IMAGE_NAME:-openclaw-local}:${OPENCLAW_IMAGE_TAG:-latest}
-    container_name: openclaw-cli
-
     profiles:
       - cli
-
     network_mode: service:openclaw
-
+    entrypoint: ["node", "dist/index.js"]
     env_file:
       - .env
-
     environment:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TZ: America/Sao_Paulo
       TERM: xterm-256color
-
       OPENCLAW_STATE_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:?Defina OPENCLAW_GATEWAY_TOKEN}
       OLLAMA_API_KEY: ollama-local
       BROWSER: echo
-
     volumes:
       - type: bind
         source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw}
         target: /home/node/.openclaw
-
     depends_on:
       openclaw:
         condition: service_healthy
-
     cap_drop:
       - NET_RAW
       - NET_ADMIN
-
     security_opt:
       - no-new-privileges:true
 
 networks:
   openclaw-internal:
     name: openclaw-internal
-
   proxy-network:
     external: true
