@@ -184,7 +184,7 @@ pipeline {
 
                         echo "🧪 Testando modelo no Ollama..."
                         resposta="$(docker compose exec -T ollama \
-                            ollama run "${OLLAMA_MODEL:-qwen3:8b}" \
+                            ollama run "${OLLAMA_MODEL:-qwen3:4b}" \
                             'Responda somente com: OK')"
 
                         echo "$resposta"
