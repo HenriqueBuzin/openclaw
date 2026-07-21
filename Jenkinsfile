@@ -33,54 +33,33 @@ pipeline {
 
         stage('Preparar ambiente') {
             steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'openclaw-gateway-token',
-                        variable: 'OPENCLAW_GATEWAY_TOKEN_SECRET'
-                    )
-                ]) {
-                    dir(env.PROJECT_DIR) {
-                        sh '''
-                            set -eu
-                            umask 077
+                dir(env.PROJECT_DIR) {
+                    sh '''
+                        set -eu
 
-                            echo "📁 Preparando diretórios persistentes..."
-                            mkdir -p \
-                                "$OPENCLAW_DATA_ROOT/workspace" \
-                                "$OLLAMA_DATA_ROOT" \
-                                "$(dirname "$ENV_FILE")"
+                        echo "📁 Preparando diretórios persistentes..."
+                        mkdir -p \
+                            "$OPENCLAW_DATA_ROOT/workspace" \
+                            "$OLLAMA_DATA_ROOT"
 
-                            chown -R 1000:1000 "$OPENCLAW_DATA_ROOT"
+                        echo "🔐 Ajustando permissões do OpenClaw..."
+                        chown -R 1000:1000 "$OPENCLAW_DATA_ROOT"
 
-                            echo "📝 Criando arquivo de ambiente..."
-                            cat > "$ENV_FILE" <<ENVEOF
-COMPOSE_PROJECT_NAME=openclaw
+                        echo "🔎 Verificando arquivo de ambiente..."
+                        if [ ! -f "$ENV_FILE" ]; then
+                            echo "❌ Arquivo de ambiente não encontrado: $ENV_FILE"
+                            exit 1
+                        fi
 
-OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:latest
-OPENCLAW_IMAGE_NAME=openclaw-local
-OPENCLAW_IMAGE_TAG=latest
+                        chmod 600 "$ENV_FILE"
 
-OPENCLAW_DATA_ROOT=$OPENCLAW_DATA_ROOT
-OLLAMA_DATA_ROOT=$OLLAMA_DATA_ROOT
+                        echo "🔗 Aplicando link simbólico do .env..."
+                        ln -sfn "$ENV_FILE" "$PROJECT_DIR/.env"
 
-OPENCLAW_GATEWAY_TOKEN=$OPENCLAW_GATEWAY_TOKEN_SECRET
-
-OLLAMA_IMAGE=ollama/ollama:latest
-OLLAMA_MODEL=qwen3:8b
-OLLAMA_CONTEXT_LENGTH=16384
-OLLAMA_KEEP_ALIVE=10m
-ENVEOF
-
-                            chmod 600 "$ENV_FILE"
-
-                            echo "🔗 Aplicando link simbólico do .env..."
-                            ln -sfn "$ENV_FILE" .env
-
-                            echo "🌐 Verificando rede do proxy..."
-                            docker network inspect proxy-network >/dev/null 2>&1 \
-                                || docker network create proxy-network
-                        '''
-                    }
+                        echo "🌐 Verificando rede do proxy..."
+                        docker network inspect proxy-network >/dev/null 2>&1 \
+                            || docker network create proxy-network
+                    '''
                 }
             }
         }

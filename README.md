@@ -258,8 +258,6 @@ O pipeline impede builds simultâneos para evitar dois deploys concorrentes alte
 Exemplo:
 
 ```dotenv
-COMPOSE_PROJECT_NAME=openclaw
-
 OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:latest
 OPENCLAW_IMAGE_NAME=openclaw-local
 OPENCLAW_IMAGE_TAG=latest
