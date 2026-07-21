@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+Jenkinsfile
+README.md
+
+backups/
+logs/
+*.log
