@@ -511,7 +511,7 @@ proxy-network
 Crie um Proxy Host com:
 
 ```text
-Domain Names: openclaw.henriquebuz.in
+Domain Names: ai.henriquebuz.in
 Scheme: http
 Forward Hostname: openclaw
 Forward Port: 18789
@@ -530,7 +530,7 @@ HTTP/2 Support: ativado
 Acesso:
 
 ```text
-https://openclaw.henriquebuz.in
+https://ai.henriquebuz.in
 ```
 
 ## Segurança

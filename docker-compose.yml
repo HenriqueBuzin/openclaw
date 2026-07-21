@@ -86,7 +86,16 @@ services:
     container_name: openclaw
     restart: unless-stopped
     init: true
-    command: ["gateway", "--bind", "lan", "--port", "18789"]
+    command:
+      [
+        "node",
+        "dist/index.js",
+        "gateway",
+        "--bind",
+        "lan",
+        "--port",
+        "18789"
+      ]
     env_file:
       - .env
     environment:

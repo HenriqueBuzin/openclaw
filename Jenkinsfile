@@ -15,18 +15,6 @@ pipeline {
     }
 
     stages {
-        stage('Validar branch') {
-            steps {
-                script {
-                    echo "🚀 Branch detectada: ${env.BRANCH_NAME}"
-
-                    if (env.BRANCH_NAME != 'main') {
-                        currentBuild.result = 'NOT_BUILT'
-                        error("Branch ignorada: ${env.BRANCH_NAME}")
-                    }
-                }
-            }
-        }
 
         stage('Atualizar código') {
             steps {
@@ -143,12 +131,6 @@ ENVEOF
 
                         echo "🦙 Iniciando Ollama..."
                         docker compose up -d ollama
-
-                        echo "🤖 Instalando ou verificando modelo..."
-                        docker compose run --rm ollama-model-init
-
-                        echo "⚙️ Instalando configuração..."
-                        docker compose run --rm openclaw-config-init
                     '''
                 }
             }
@@ -160,7 +142,7 @@ ENVEOF
                     sh '''
                         set -eu
 
-                        echo "🚀 Subindo OpenClaw..."
+                        echo "🚀 Instalando dependências e subindo OpenClaw..."
                         docker compose up -d --remove-orphans openclaw
                     '''
                 }
