@@ -258,6 +258,8 @@ O pipeline impede builds simultâneos para evitar dois deploys concorrentes alte
 Exemplo:
 
 ```dotenv
+COMPOSE_PROJECT_NAME=openclaw
+
 OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:latest
 OPENCLAW_IMAGE_NAME=openclaw-local
 OPENCLAW_IMAGE_TAG=latest
@@ -268,7 +270,7 @@ OLLAMA_DATA_ROOT=/root/projects/volumes/ollama
 OPENCLAW_GATEWAY_TOKEN=gere-um-token-seguro
 
 OLLAMA_IMAGE=ollama/ollama:latest
-OLLAMA_MODEL=qwen3:8b
+OLLAMA_MODEL=qwen3:4b
 OLLAMA_CONTEXT_LENGTH=16384
 OLLAMA_KEEP_ALIVE=10m
 
