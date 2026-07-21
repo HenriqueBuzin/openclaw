@@ -10,24 +10,34 @@ pipeline {
         PROJECT_NAME = 'openclaw'
         PROJECT_DIR = '/root/projects/openclaw'
         ENV_FILE = '/root/projects/envs/openclaw.env'
-        OPENCLAW_DATA_ROOT = '/root/projects/volumes/openclaw'
-        OLLAMA_DATA_ROOT = '/root/projects/volumes/ollama'
+        OPENCLAW_DATA_ROOT = '/root/projects/openclaw/openclaw'
+        OLLAMA_DATA_ROOT = '/root/projects/openclaw/ollama'
     }
 
     stages {
 
         stage('Atualizar código') {
             steps {
-                dir(env.PROJECT_DIR) {
-                    sh '''
-                        set -eu
+                sh '''
+                    set -eu
 
-                        echo "🔄 Atualizando código..."
-                        git fetch --prune origin
-                        git reset --hard origin/main
-                        git clean -fd
-                    '''
-                }
+                    echo "📁 Preparando diretório do projeto..."
+                    mkdir -p "$PROJECT_DIR"
+
+                    echo "🧹 Removendo arquivos antigos sem apagar volumes e .env..."
+                    find "$PROJECT_DIR" \
+                        -mindepth 1 \
+                        -maxdepth 1 \
+                        ! -name 'openclaw' \
+                        ! -name 'ollama' \
+                        ! -name '.env' \
+                        -exec rm -rf -- {} +
+
+                    echo "📦 Copiando checkout do Jenkins para o projeto..."
+                    cp -a "$WORKSPACE"/. "$PROJECT_DIR"/
+
+                    echo "✅ Código atualizado em $PROJECT_DIR"
+                '''
             }
         }
 
@@ -140,9 +150,15 @@ pipeline {
                         limite=30
 
                         while [ "$tentativas" -lt "$limite" ]; do
-                            status="$(docker inspect \
-                                --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}sem-healthcheck{{end}}' \
-                                openclaw 2>/dev/null || true)"
+                            container_id="$(docker compose ps -q --all openclaw)"
+
+                            if [ -z "$container_id" ]; then
+                                status="indisponível"
+                            else
+                                status="$(docker inspect \
+                                    --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}sem-healthcheck{{end}}' \
+                                    "$container_id" 2>/dev/null || true)"
+                            fi
 
                             echo "Status: ${status:-indisponível}"
 
@@ -192,18 +208,21 @@ pipeline {
 
             dir(env.PROJECT_DIR) {
                 sh '''
-                    docker compose ps || true
-                    docker compose logs --tail=200 openclaw ollama || true
+                    if [ -f docker-compose.yml ] || [ -f compose.yml ]; then
+                        docker compose ps || true
+                        docker compose logs --tail=200 openclaw ollama || true
+                    else
+                        echo "⚠️ Docker Compose ainda não está disponível em $PROJECT_DIR."
+                    fi
                 '''
             }
         }
 
         cleanup {
-            dir(env.PROJECT_DIR) {
-                sh '''
-                    docker image prune -f >/dev/null 2>&1 || true
-                '''
-            }
+            sh '''
+                docker image prune -f >/dev/null 2>&1 || true
+            '''
         }
+        
     }
 }

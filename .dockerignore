@@ -1,8 +1,11 @@
-.git
-.gitignore
+# Variáveis locais e segredos
 .env
 .env.*
 !.env.example
-README.md
-LICENSE
+
+# Dados persistentes dos containers
+/openclaw/
+/ollama/
+
+# Logs
 *.log
