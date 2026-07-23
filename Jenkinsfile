@@ -175,7 +175,7 @@ pipeline {
                                 fi
 
                                 resposta="$(docker compose exec -T ollama \
-                                    ollama run "${OLLAMA_MODEL:-qwen3:4b}" \
+                                    ollama run "${OLLAMA_MODEL:-qwen3:8b}" \
                                     'Responda somente com: OK')"
 
                                 echo "$resposta"

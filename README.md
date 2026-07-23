@@ -270,7 +270,7 @@ OLLAMA_DATA_ROOT=/root/projects/volumes/ollama
 OPENCLAW_GATEWAY_TOKEN=gere-um-token-seguro
 
 OLLAMA_IMAGE=ollama/ollama:latest
-OLLAMA_MODEL=qwen3:4b
+OLLAMA_MODEL=qwen3:8b
 OLLAMA_CONTEXT_LENGTH=16384
 OLLAMA_KEEP_ALIVE=10m
 
@@ -302,7 +302,7 @@ E, quando necessário, ajuste também o `openclaw.json`.
 Exemplos de modelos menores:
 
 ```text
-qwen3:4b
+qwen3:8b
 qwen3:1.7b
 ```
 
@@ -674,7 +674,7 @@ OLLAMA_CONTEXT_LENGTH=8192
 Ou troque o modelo:
 
 ```text
-qwen3:4b
+qwen3:8b
 ```
 
 ### Download do modelo demora demais
