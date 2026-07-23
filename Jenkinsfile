@@ -18,7 +18,8 @@ pipeline {
         stage('Deploy VPS') {
             when {
                 beforeAgent true
-                branch 'vps'
+                // branch 'vps'
+                expression { false }
             }
 
             agent any
