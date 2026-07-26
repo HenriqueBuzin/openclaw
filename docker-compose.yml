@@ -4,6 +4,7 @@ services:
   ollama:
     image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
     restart: unless-stopped
+    gpus: all
     environment:
       TZ: America/Sao_Paulo
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-10m}
@@ -112,8 +113,8 @@ services:
       - type: bind
         source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw}
         target: /home/node/.openclaw
-    expose:
-      - "18789"
+    ports:
+      - "18789:18789"
     networks:
       - openclaw-internal
       - proxy-network
