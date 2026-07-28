@@ -7,7 +7,7 @@ Este repositório é a especificação completa da infraestrutura do OpenClaw. N
 - OpenClaw 2026.7.1 atende internamente na porta 18789.
 - Ollama 0.32.0 atende internamente na porta 11434 e carrega `OLLAMA_MODEL`, por padrão `qwen3:8b`.
 - `openclaw.json` configura o provider `ollama` usando o alias de rede `http://ollama:11434`.
-- Caddy 2.11.4 é o único proxy. Em dev escuta `:80`; em produção usa `CADDY_DOMAIN` e `CADDY_EMAIL`.
+- Caddy 2.11.4 é o proxy interno e escuta `:80`; o Caddy global da VPS termina o TLS pela `proxy-network`.
 - Nenhuma porta do Ollama é publicada e nenhum serviço usa Nginx.
 
 ## Arquivos obrigatórios
@@ -41,7 +41,7 @@ O `.env` nunca é versionado. Jenkins cria um link simbólico para o arquivo ext
 
 ## Variáveis
 
-Obrigatórias: `OPENCLAW_GATEWAY_TOKEN`. Produção também exige `CADDY_DOMAIN` e `CADDY_EMAIL`.
+Obrigatória: `OPENCLAW_GATEWAY_TOKEN`.
 
 Configuráveis: `OPENCLAW_DATA_ROOT`, `OLLAMA_DATA_ROOT`, `OLLAMA_MODEL`, `OLLAMA_CONTEXT_LENGTH`, `OLLAMA_KEEP_ALIVE`, `IMAGE_TAG`, `BUILD_COMMIT`, `BUILD_DATE`, `BUILD_NUMBER`.
 

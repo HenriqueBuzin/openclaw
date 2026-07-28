@@ -133,16 +133,10 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    environment:
-      CADDY_DOMAIN: ${CADDY_DOMAIN:?Defina CADDY_DOMAIN}
-      CADDY_EMAIL: ${CADDY_EMAIL:?Defina CADDY_EMAIL}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
     expose:
       - "80"
-      - "443"
     networks:
       internal:
       proxy-network:
@@ -156,10 +150,6 @@ services:
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
-
-volumes:
-  caddy_data:
-  caddy_config:
 
 networks:
   internal:

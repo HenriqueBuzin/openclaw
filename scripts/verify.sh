@@ -2,8 +2,6 @@
 set -eu
 
 export OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-ci-token}"
-export CADDY_DOMAIN="${CADDY_DOMAIN:-openclaw.example.test}"
-export CADDY_EMAIL="${CADDY_EMAIL:-admin@example.test}"
 
 python3 -m json.tool openclaw.json >/dev/null
 

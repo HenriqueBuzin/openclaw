@@ -37,8 +37,6 @@ jobs:
       - name: Compose
         env:
           OPENCLAW_GATEWAY_TOKEN: ci-token
-          CADDY_DOMAIN: openclaw.example.test
-          CADDY_EMAIL: admin@example.test
         run: |
           docker compose --env-file .env.example -f docker-compose.yml config --quiet
           docker compose --env-file .env.example -f docker-compose-prod.yml config --quiet
