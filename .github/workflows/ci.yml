@@ -60,6 +60,7 @@ jobs:
           image: openclaw/backend:ci
           fail-build: true
           severity-cutoff: high
+          only-fixed: true
 
       - name: Deploy
         run: echo "Deploy autorizado apenas pelo Jenkins em main/dev."
