@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1.7
+
+FROM ollama/ollama:0.32.0
+
+ENV OLLAMA_HOST=http://model:11434 \
+    OLLAMA_MODEL=qwen3:8b
+
+ENTRYPOINT ["/bin/sh", "-ec"]
+CMD ["ollama pull \"$OLLAMA_MODEL\""]

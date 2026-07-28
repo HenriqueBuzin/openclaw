@@ -1,0 +1,4 @@
+{$CADDY_DOMAIN} {
+	tls {$CADDY_EMAIL}
+	reverse_proxy backend:18789
+}

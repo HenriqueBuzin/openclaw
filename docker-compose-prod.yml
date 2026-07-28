@@ -1,4 +1,4 @@
-name: openclaw-dev
+name: openclaw
 
 x-logging: &default-logging
   driver: json-file
@@ -8,7 +8,7 @@ x-logging: &default-logging
 
 x-labels: &default-labels
   infra.project: openclaw
-  infra.environment: development
+  infra.environment: production
   infra.version: ${IMAGE_TAG:-local}
 
 services:
@@ -23,7 +23,7 @@ services:
       OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-16384}
     volumes:
       - type: bind
-        source: ${OLLAMA_DATA_ROOT:-/root/projects/volumes/openclaw-dev/ollama}
+        source: ${OLLAMA_DATA_ROOT:-/root/projects/volumes/openclaw/ollama}
         target: /root/.ollama
     expose:
       - "11434"
@@ -42,7 +42,7 @@ services:
     logging: *default-logging
 
   model-init:
-    image: openclaw/model-init:${IMAGE_TAG:-local}-dev
+    image: openclaw/model-init:${IMAGE_TAG:-local}
     labels: *default-labels
     build:
       context: .
@@ -60,7 +60,7 @@ services:
     logging: *default-logging
 
   config-init:
-    image: openclaw/config-init:${IMAGE_TAG:-local}-dev
+    image: openclaw/config-init:${IMAGE_TAG:-local}
     labels: *default-labels
     build:
       context: .
@@ -69,7 +69,7 @@ services:
     user: "0:0"
     volumes:
       - type: bind
-        source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw-dev/openclaw}
+        source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw/openclaw}
         target: /state
       - type: bind
         source: ./openclaw.json
@@ -82,7 +82,7 @@ services:
     logging: *default-logging
 
   backend:
-    image: openclaw/backend:${IMAGE_TAG:-local}-dev
+    image: openclaw/backend:${IMAGE_TAG:-local}
     labels: *default-labels
     build:
       context: .
@@ -101,7 +101,7 @@ services:
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:?Defina OPENCLAW_GATEWAY_TOKEN}
     volumes:
       - type: bind
-        source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw-dev/openclaw}
+        source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw/openclaw}
         target: /home/node/.openclaw
     expose:
       - "18789"
@@ -133,15 +133,21 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN:?Defina CADDY_DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL:?Defina CADDY_EMAIL}
     volumes:
-      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     expose:
       - "80"
+      - "443"
     networks:
       internal:
       proxy-network:
         aliases:
-          - openclaw-dev
+          - openclaw
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
       interval: 10s
@@ -151,8 +157,12 @@ services:
       - no-new-privileges:true
     logging: *default-logging
 
+volumes:
+  caddy_data:
+  caddy_config:
+
 networks:
   internal:
-    name: openclaw-dev-internal
+    name: openclaw-internal
   proxy-network:
     external: true
