@@ -1,0 +1,19 @@
+{
+  "name": "openclaw-infrastructure",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": "24.18.0",
+    "npm": "11.16.0"
+  },
+  "scripts": {
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "test:e2e:playwright": "playwright test",
+    "test:e2e:list": "playwright test --list"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0",
+    "typescript": "6.0.3"
+  }
+}

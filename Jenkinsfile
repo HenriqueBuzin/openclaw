@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -7,214 +7,153 @@ pipeline {
     }
 
     environment {
-        PROJECT_NAME = 'openclaw'
-        PROJECT_DIR = '/root/projects/openclaw'
-        ENV_FILE = '/root/projects/envs/openclaw.env'
-        OPENCLAW_DATA_ROOT = '/root/projects/openclaw/openclaw'
-        OLLAMA_DATA_ROOT = '/root/projects/openclaw/ollama'
+        PROJECT_ROOT = '/root/projects'
+        ENV_ROOT = '/root/projects/envs'
     }
 
     stages {
-        stage('Deploy VPS') {
+        stage('Install') {
             when {
-                beforeAgent true
-                // branch 'vps'
-                expression { false }
+                expression { ['main', 'dev'].contains(env.BRANCH_NAME) }
             }
-
-            agent any
-
-            stages {
-                stage('Atualizar código') {
-                    steps {
-                        sh '''
-                            set -eu
-
-                            echo "📁 Preparando diretório do projeto..."
-                            mkdir -p "$PROJECT_DIR"
-
-                            echo "🧹 Removendo arquivos antigos sem apagar volumes e .env..."
-                            find "$PROJECT_DIR" \
-                                -mindepth 1 \
-                                -maxdepth 1 \
-                                ! -name 'openclaw' \
-                                ! -name 'ollama' \
-                                ! -name '.env' \
-                                -exec rm -rf -- {} +
-
-                            echo "📦 Copiando checkout do Jenkins para o projeto..."
-                            cp -a "$WORKSPACE"/. "$PROJECT_DIR"/
-
-                            echo "✅ Código atualizado em $PROJECT_DIR"
-                        '''
-                    }
-                }
-
-                stage('Preparar ambiente') {
-                    steps {
-                        dir(env.PROJECT_DIR) {
-                            sh '''
-                                set -eu
-
-                                mkdir -p \
-                                    "$OPENCLAW_DATA_ROOT/workspace" \
-                                    "$OLLAMA_DATA_ROOT"
-
-                                chown -R 1000:1000 "$OPENCLAW_DATA_ROOT"
-
-                                if [ ! -f "$ENV_FILE" ]; then
-                                    echo "❌ Arquivo de ambiente não encontrado: $ENV_FILE"
-                                    exit 1
-                                fi
-
-                                chmod 600 "$ENV_FILE"
-                                ln -sfn "$ENV_FILE" "$PROJECT_DIR/.env"
-
-                                docker network inspect proxy-network >/dev/null 2>&1 \
-                                    || docker network create proxy-network
-                            '''
-                        }
-                    }
-                }
-
-                stage('Validar configuração') {
-                    steps {
-                        dir(env.PROJECT_DIR) {
-                            sh '''
-                                set -eu
-
-                                test -f Dockerfile
-                                test -f docker-compose.yml
-                                test -f openclaw.json
-                                test -L .env
-
-                                python3 -m json.tool openclaw.json >/dev/null
-                                docker compose config --quiet
-                            '''
-                        }
-                    }
-                }
-
-                stage('Build') {
-                    steps {
-                        dir(env.PROJECT_DIR) {
-                            sh '''
-                                set -eu
-
-                                export BUILD_COMMIT="$(git rev-parse HEAD)"
-                                export BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-                                export BUILD_NUMBER="${BUILD_NUMBER:-local}"
-
-                                docker compose build --pull openclaw
-                            '''
-                        }
-                    }
-                }
-
-                stage('Inicializar dependências') {
-                    steps {
-                        dir(env.PROJECT_DIR) {
-                            sh '''
-                                set -eu
-                                docker compose up -d ollama
-                            '''
-                        }
-                    }
-                }
-
-                stage('Deploy') {
-                    steps {
-                        dir(env.PROJECT_DIR) {
-                            sh '''
-                                set -eu
-                                docker compose up -d --remove-orphans openclaw
-                            '''
-                        }
-                    }
-                }
-
-                stage('Verificar saúde') {
-                    steps {
-                        dir(env.PROJECT_DIR) {
-                            sh '''
-                                set -eu
-
-                                tentativas=0
-                                limite=30
-
-                                while [ "$tentativas" -lt "$limite" ]; do
-                                    container_id="$(docker compose ps -q --all openclaw)"
-
-                                    if [ -z "$container_id" ]; then
-                                        status="indisponível"
-                                    else
-                                        status="$(docker inspect \
-                                            --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}sem-healthcheck{{end}}' \
-                                            "$container_id" 2>/dev/null || true)"
-                                    fi
-
-                                    echo "Status: ${status:-indisponível}"
-
-                                    if [ "$status" = "healthy" ]; then
-                                        break
-                                    fi
-
-                                    if [ "$status" = "unhealthy" ]; then
-                                        docker compose logs --tail=200 openclaw
-                                        exit 1
-                                    fi
-
-                                    tentativas=$((tentativas + 1))
-                                    sleep 10
-                                done
-
-                                if [ "$tentativas" -ge "$limite" ]; then
-                                    echo "❌ Tempo limite aguardando o OpenClaw."
-                                    docker compose ps
-                                    docker compose logs --tail=200 openclaw
-                                    exit 1
-                                fi
-
-                                resposta="$(docker compose exec -T ollama \
-                                    ollama run "${OLLAMA_MODEL:-qwen3:8b}" \
-                                    'Responda somente com: OK')"
-
-                                echo "$resposta"
-                                echo "$resposta" | grep -q 'OK'
-
-                                docker compose ps
-                            '''
-                        }
-                    }
-                }
+            steps {
+                sh '''
+                    set -eu
+                    command -v docker
+                    docker compose version
+                    command -v node
+                    command -v npm
+                    npm ci --no-audit --no-fund
+                '''
             }
+        }
 
-            post {
-                success {
-                    echo '✅ Deploy do OpenClaw concluído com sucesso.'
-                }
-
-                failure {
-                    echo '❌ O deploy do OpenClaw falhou.'
-
-                    dir(env.PROJECT_DIR) {
-                        sh '''
-                            if [ -f docker-compose.yml ] || [ -f compose.yml ]; then
-                                docker compose ps || true
-                                docker compose logs --tail=200 openclaw ollama || true
-                            else
-                                echo "⚠️ Docker Compose ainda não está disponível em $PROJECT_DIR."
-                            fi
-                        '''
-                    }
-                }
-
-                cleanup {
-                    sh '''
-                        docker image prune -f >/dev/null 2>&1 || true
-                    '''
-                }
+        stage('Verify') {
+            when {
+                expression { ['main', 'dev'].contains(env.BRANCH_NAME) }
             }
+            steps {
+                sh '''
+                    set -eu
+                    sh scripts/verify.sh
+                    npm run test:e2e:list
+                '''
+            }
+        }
+
+        stage('Compose') {
+            when {
+                expression { ['main', 'dev'].contains(env.BRANCH_NAME) }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    branch="${BRANCH_NAME}"
+                    suffix=""
+                    compose_file="docker-compose-prod.yml"
+                    if [ "$branch" = "dev" ]; then
+                      suffix="-dev"
+                      compose_file="docker-compose.yml"
+                    fi
+
+                    project="openclaw${suffix}"
+                    project_dir="${PROJECT_ROOT}/${project}"
+                    env_file="${ENV_ROOT}/${project}.env"
+
+                    test -f "$env_file"
+                    install -d -m 0755 "$project_dir"
+                    find "$project_dir" -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf -- {} +
+                    cp -a "$WORKSPACE"/. "$project_dir"/
+                    ln -sfn "$env_file" "$project_dir/.env"
+
+                    cd "$project_dir"
+                    export COMPOSE_PROJECT_NAME="$project"
+                    docker compose --env-file .env -f "$compose_file" config --quiet
+                '''
+            }
+        }
+
+        stage('Container') {
+            when {
+                expression { ['main', 'dev'].contains(env.BRANCH_NAME) }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    suffix=""
+                    compose_file="docker-compose-prod.yml"
+                    if [ "$BRANCH_NAME" = "dev" ]; then
+                      suffix="-dev"
+                      compose_file="docker-compose.yml"
+                    fi
+
+                    project="openclaw${suffix}"
+                    cd "${PROJECT_ROOT}/${project}"
+                    export COMPOSE_PROJECT_NAME="$project"
+                    export BUILD_COMMIT="$(git rev-parse HEAD)"
+                    export BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                    docker compose --env-file .env -f "$compose_file" build --pull backend config-init model-init
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                expression { ['main', 'dev'].contains(env.BRANCH_NAME) }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    suffix=""
+                    compose_file="docker-compose-prod.yml"
+                    if [ "$BRANCH_NAME" = "dev" ]; then
+                      suffix="-dev"
+                      compose_file="docker-compose.yml"
+                    fi
+
+                    project="openclaw${suffix}"
+                    cd "${PROJECT_ROOT}/${project}"
+                    export COMPOSE_PROJECT_NAME="$project"
+                    docker network inspect proxy-network >/dev/null 2>&1 || docker network create proxy-network
+                    docker compose --env-file .env -f "$compose_file" down --timeout 30 || true
+                    docker compose --env-file .env -f "$compose_file" up -d --remove-orphans
+
+                    attempts=0
+                    until [ "$attempts" -ge 30 ]; do
+                      status="$(docker compose --env-file .env -f "$compose_file" ps --format json backend | grep -o '"Health":"[^"]*"' | head -1 || true)"
+                      [ "$status" = '"Health":"healthy"' ] && break
+                      attempts=$((attempts + 1))
+                      sleep 10
+                    done
+
+                    [ "$attempts" -lt 30 ] || {
+                      docker compose --env-file .env -f "$compose_file" logs --tail=200 backend model web
+                      exit 1
+                    }
+
+                    docker compose --env-file .env -f "$compose_file" exec -T model \
+                      ollama run "${OLLAMA_MODEL:-qwen3:8b}" 'Responda somente com: OK' | grep -q OK
+                    docker compose --env-file .env -f "$compose_file" ps
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            sh '''
+                suffix=""
+                compose_file="docker-compose-prod.yml"
+                [ "${BRANCH_NAME:-}" = "dev" ] && suffix="-dev" && compose_file="docker-compose.yml"
+                project="openclaw${suffix}"
+                if [ -d "${PROJECT_ROOT}/${project}" ]; then
+                  cd "${PROJECT_ROOT}/${project}"
+                  docker compose --env-file .env -f "$compose_file" logs --tail=200 || true
+                fi
+            '''
+        }
+        cleanup {
+            sh 'docker image prune -f >/dev/null 2>&1 || true'
         }
     }
 }

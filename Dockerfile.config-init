@@ -1,0 +1,8 @@
+# syntax=docker/dockerfile:1.7
+
+FROM alpine:3.23
+
+COPY scripts/init-config.sh /usr/local/bin/init-config
+RUN chmod 0755 /usr/local/bin/init-config
+
+CMD ["/usr/local/bin/init-config"]
