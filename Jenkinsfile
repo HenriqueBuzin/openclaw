@@ -21,9 +21,7 @@ pipeline {
                     set -eu
                     command -v docker
                     docker compose version
-                    command -v node
-                    command -v npm
-                    npm ci --no-audit --no-fund
+                    echo 'Dependencias Node/npm sao instaladas no build multi-stage.'
                 '''
             }
         }
@@ -36,7 +34,7 @@ pipeline {
                 sh '''
                     set -eu
                     sh scripts/verify.sh
-                    npm run test:e2e:list
+                    docker build --target verify --tag openclaw/infra:verify .
                 '''
             }
         }
