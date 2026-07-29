@@ -1,7 +1,20 @@
 # syntax=docker/dockerfile:1.7
 
 ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1
-FROM ${OPENCLAW_BASE_IMAGE}
+
+FROM node:24.18.0-bookworm-slim AS verify
+
+WORKDIR /workspace
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY . ./
+
+RUN npm run test:e2e:list
+
+
+FROM ${OPENCLAW_BASE_IMAGE} AS runtime
 
 ARG BUILD_COMMIT=""
 ARG BUILD_DATE=""
