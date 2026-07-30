@@ -49,6 +49,7 @@ services:
       dockerfile: Dockerfile.model-init
     restart: "no"
     environment:
+      TZ: America/Sao_Paulo
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:8b}
     depends_on:
       model:
@@ -67,6 +68,8 @@ services:
       dockerfile: Dockerfile.config-init
     restart: "no"
     user: "0:0"
+    environment:
+      TZ: America/Sao_Paulo
     volumes:
       - type: bind
         source: ${OPENCLAW_DATA_ROOT:-/root/projects/volumes/openclaw/openclaw}
@@ -98,6 +101,7 @@ services:
       - path: .env
         required: false
     environment:
+      TZ: America/Sao_Paulo
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:?Defina OPENCLAW_GATEWAY_TOKEN}
     volumes:
       - type: bind
@@ -106,7 +110,10 @@ services:
     expose:
       - "18789"
     networks:
-      - internal
+      internal:
+      proxy-network:
+        aliases:
+          - openclaw
     depends_on:
       model-init:
         condition: service_completed_successfully
@@ -121,32 +128,6 @@ services:
     cap_drop:
       - NET_RAW
       - NET_ADMIN
-    security_opt:
-      - no-new-privileges:true
-    logging: *default-logging
-
-  web:
-    image: caddy:2.11.4-alpine
-    labels: *default-labels
-    restart: unless-stopped
-    init: true
-    depends_on:
-      backend:
-        condition: service_healthy
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    expose:
-      - "80"
-    networks:
-      internal:
-      proxy-network:
-        aliases:
-          - openclaw
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
     security_opt:
       - no-new-privileges:true
     logging: *default-logging

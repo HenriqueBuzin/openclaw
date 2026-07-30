@@ -1,13 +1,18 @@
 # OpenClaw
 
-Infraestrutura para executar OpenClaw 2026.7.1 com Ollama 0.32.0, Qwen3 e Caddy 2.11.4.
+Infraestrutura para executar OpenClaw 2026.7.1 com Ollama 0.32.0 e Qwen3.
 
 ## Ambientes
 
 - `main`: produção, projeto Compose `openclaw`, arquivo `docker-compose-prod.yml`.
 - `dev`: desenvolvimento, projeto Compose `openclaw-dev`, arquivo `docker-compose.yml`.
 
-Os dois ambientes usam os serviços `backend`, `web`, `model`, `model-init` e `config-init`. Caddy é o único proxy HTTP; não há Nginx nem profiles.
+Os dois ambientes usam os serviços `backend`, `model`, `model-init` e `config-init`. O backend entra
+diretamente na `proxy-network`; não há Caddy interno, Nginx nem profiles. No proxy global da VPS,
+use `openclaw:18789` em produção e `openclaw-dev:18789` em desenvolvimento, mantendo WebSocket
+habilitado.
+
+Todos os containers usam `TZ=America/Sao_Paulo`.
 
 ## Configuração
 
@@ -28,6 +33,9 @@ docker network inspect proxy-network >/dev/null 2>&1 || docker network create pr
 sh scripts/verify.sh
 docker compose -f docker-compose.yml up -d --build
 ```
+
+Abra `http://127.0.0.1:18789` no navegador. A porta local pode ser alterada por
+`OPENCLAW_LOCAL_PORT`; ela permanece vinculada somente a `127.0.0.1`.
 
 Produção:
 
