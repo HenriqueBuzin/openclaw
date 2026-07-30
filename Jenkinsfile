@@ -125,7 +125,7 @@ pipeline {
                     done
 
                     [ "$attempts" -lt 30 ] || {
-                      docker compose --env-file .env -f "$compose_file" logs --tail=200 backend model web
+                      docker compose --env-file .env -f "$compose_file" logs --tail=200 backend model
                       exit 1
                     }
 
