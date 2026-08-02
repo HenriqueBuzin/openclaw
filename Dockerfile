@@ -2,7 +2,7 @@
 
 ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1
 
-FROM node:24.18.0-bookworm-slim AS verify
+FROM node:24.18.1-bookworm-slim AS verify
 
 WORKDIR /workspace
 
@@ -13,7 +13,7 @@ COPY . ./
 
 RUN npm run test:e2e:list
 
-FROM node:24.18.0-bookworm-slim AS node-runtime
+FROM node:24.18.1-bookworm-slim AS node-runtime
 
 FROM ${OPENCLAW_BASE_IMAGE} AS runtime
 
